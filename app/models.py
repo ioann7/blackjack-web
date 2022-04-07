@@ -53,7 +53,6 @@ class User(UserMixin, db.Model):
 
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # state = db.Column(db.Enum(GameState), default=GameState.started)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id))
     dealers_open_card_id = db.Column(db.Integer)
     result = db.Column(db.Enum(GameResult), default=GameResult.in_progress)

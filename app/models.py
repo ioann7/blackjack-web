@@ -54,7 +54,6 @@ class User(UserMixin, db.Model):
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id))
-    dealers_open_card_id = db.Column(db.Integer)
     result = db.Column(db.Enum(GameResult), default=GameResult.in_progress)
     cards = db.relationship('Card', lazy='dynamic', backref='game')
     created = db.Column(db.DateTime, default=datetime.now)
@@ -78,13 +77,13 @@ class Game(db.Model):
             'state': self.state.name,
             'result': self.result.name,
             'player_cards': [card.to_dict() for card in self.player_cards],
-            'dealer_open_card': self.dealer_open_card.to_dict(),
+            'open_card_of_dealer': self.open_card_of_dealer.to_dict(),
             'created': str(self.created),
         }
         if include_dealer_cards:
             data['deck_of_cards'] = [card.to_dict() for card in self.deck_of_cards]
             data['dealer_cards'] = [card.to_dict() for card in self.dealer_cards]
-            data['dealers_closed_cards'] = [card.to_dict() for card in self.dealers_closed_cards]
+            data['closed_cards_of_dealer'] = [card.to_dict() for card in self.closed_cards_of_dealer]
         return data
 
     def generate_cards(self):
@@ -119,12 +118,12 @@ class Game(db.Model):
         return [card for card in self.cards.all() if card.owner == CardOwner.dealer]
 
     @property
-    def dealer_open_card(self):
+    def open_card_of_dealer(self):
         # FIXME MAYBE THERE IS A BUG HERE. MAYBE self.dealers_cards returns in different orders. NEED TESTS
         return self.dealer_cards[0]
 
     @property
-    def dealers_closed_cards(self):
+    def closed_cards_of_dealer(self):
         return [card for card in self.dealer_cards if card.id != self.dealer_cards[0].id]
 
     def __repr__(self):
@@ -138,7 +137,6 @@ class Card(db.Model):
     suit = db.Column(db.Enum(Suit))
     game_id = db.Column(db.Integer, db.ForeignKey(Game.id))
     owner = db.Column(db.Enum(CardOwner))
-    is_garbage = db.Column(db.Boolean, default=False)
 
     def to_dict(self):
         return {

@@ -2,3 +2,6 @@
 *.idea*
 venv/
 app/blackjack.db
+__pycache__
+app/__pycache__
+app/game/__pycache__/

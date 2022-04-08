@@ -33,7 +33,11 @@ def new():
 @game.route('/info')
 @login_required
 def info():
-    game = current_user.cur_game
+    if request.args.get('last_game') == 'true':
+        game = current_user.games.order_by(Game.created.desc()).first()
+    else:
+        game = current_user.cur_game
+
     if not game:
         return jsonify(success=False, error='game_not_found', message='Game not found. Try start new game')
     if game.state == GameState.started:

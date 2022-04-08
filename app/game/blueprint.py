@@ -115,4 +115,5 @@ def stand():
 @game.route('/history')
 @login_required
 def history():
+    # FIXME сделать ограничение на количество игр, например 100
     return jsonify(success=True, games=[game.result_dict() for game in current_user.games.all()])

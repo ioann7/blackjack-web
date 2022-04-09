@@ -1,11 +1,11 @@
 import random
 
 from flask import Blueprint
-from flask import render_template, request, jsonify, redirect, url_for
+from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 
 from app import db
-from app.models import Game, User
+from app.models import Game
 from app.enums import GameState, CardOwner, GameResult
 
 
@@ -24,80 +24,80 @@ def new():
     if request.method == 'POST':
         if current_user.cur_game:
             return jsonify(success=False, error='game_already_started', message='Game already started')
-        game = Game(user_id=current_user.id)
-        db.session.add(game)
+        g = Game(user_id=current_user.id)
+        db.session.add(g)
         db.session.commit()
-        return jsonify(success=True, game_id=game.id, state=game.state.name)
+        return jsonify(success=True, game_id=g.id, state=g.state.name)
 
 
 @game.route('/info')
 @login_required
 def info():
     if request.args.get('last_game') == 'true':
-        game = current_user.games.order_by(Game.created.desc()).first()
+        g = current_user.games.order_by(Game.created.desc()).first()
     else:
-        game = current_user.cur_game
+        g = current_user.cur_game
 
-    if not game:
+    if not g:
         return jsonify(success=False, error='game_not_found', message='Game not found. Try start new game')
-    if game.state == GameState.started:
-        return jsonify(game.to_dict())
-    elif game.state == GameState.finished:
-        return jsonify(game.to_dict(include_dealer_cards=True))
+    if g.state == GameState.started:
+        return jsonify(g.to_dict())
+    elif g.state == GameState.finished:
+        return jsonify(g.to_dict(include_dealer_cards=True))
 
 
 @game.route('/take_card')
 @login_required
 def take_card():
-    game = current_user.cur_game
-    if not game:
+    g = current_user.cur_game
+    if not g:
         return jsonify(success=False, error='game_not_found', message='Game not found. Try start new game')
-    elif game.state == GameState.finished:
+    elif g.state == GameState.finished:
         return jsonify(success=False, error='game_already_finished', message='Game already finished')
-    card = random.choice(game.deck_of_cards)
+    card = random.choice(g.deck_of_cards)
     card.owner = CardOwner.player
-    player_score = sum(card.weight for card in game.player_cards)
+    player_score = sum(card.weight for card in g.player_cards)
     if player_score == 21:
-        game.result = GameResult.win
+        g.result = GameResult.win
     if player_score > 21:
-        game.result = GameResult.lose
+        g.result = GameResult.lose
     db.session.commit()
-    return jsonify(success=True, game_info=game.to_dict())
+    return jsonify(success=True, game_info=g.to_dict())
 
 
 @game.route('/stand')
 @login_required
 def stand():
-    game = current_user.cur_game
-    if not game:
+    g = current_user.cur_game
+    if not g:
         return jsonify(success=False, error='game_not_found', message='Game not found. Try start new game')
-    elif game.state == GameState.finished:
+    elif g.state == GameState.finished:
         return jsonify(success=False, error='game_already_finished', message='Game already finished')
     while True:
-        dealer_score = sum(card.weight for card in game.dealer_cards)
+        dealer_score = sum(card.weight for card in g.dealer_cards)
         if dealer_score > 21:
             break
         elif dealer_score < 17:
-            card = random.choice(game.deck_of_cards)
+            card = random.choice(g.deck_of_cards)
             card.owner = CardOwner.dealer
         else:
             break
-    player_score = sum(card.weight for card in game.player_cards)
-    dealer_score = sum(card.weight for card in game.dealer_cards)
+    player_score = sum(card.weight for card in g.player_cards)
+    dealer_score = sum(card.weight for card in g.dealer_cards)
     if player_score == 21:
-        game.result = GameResult.win
+        g.result = GameResult.win
     elif player_score > 21:
-        game.result = GameResult.lose
+        g.result = GameResult.lose
     elif player_score > dealer_score:
-        game.result = GameResult.win
+        g.result = GameResult.win
     elif dealer_score > 21:
-        game.result = GameResult.win
+        g.result = GameResult.win
     elif player_score < dealer_score:
-        game.result = GameResult.lose
+        g.result = GameResult.lose
     elif player_score == dealer_score:
-        game.result = GameResult.tie
+        g.result = GameResult.tie
     db.session.commit()
-    return jsonify(success=True, game_info=game.to_dict(include_dealer_cards=True))
+    return jsonify(success=True, game_info=g.to_dict(include_dealer_cards=True))
 
 
 @game.route('/history')

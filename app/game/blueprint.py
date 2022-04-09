@@ -46,18 +46,6 @@ def info():
         return jsonify(game.to_dict(include_dealer_cards=True))
 
 
-# @game.route('/info/<int:id_>', methods=('GET',))
-# @login_required
-# def info(id_):
-#     game = Game.query.filter(Game.id == id_, Game.user_id == current_user.id).first()
-#     if not game:
-#         return jsonify(success=False, error='game_not_found', message='Game id not found')
-#     if game.state == GameState.finished:
-#         return jsonify(game.to_dict(include_dealer_cards=True))
-#     else:
-#         return jsonify(game.to_dict())
-
-
 @game.route('/take_card')
 @login_required
 def take_card():
